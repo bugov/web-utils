@@ -12,13 +12,13 @@ use feature ':5.10';
 our $VERSION = 0.2;
 
 BEGIN {
-    # Check required modules.
-    my $cmd = $^O =~ /win/i ? 'ppm install' : 'cpan';
-    eval("use Mojo::UserAgent; 1") or say(<<"ERROR") && exit;
+  # Check required modules.
+  my $cmd = $^O =~ /win/i ? 'ppm install' : 'cpan';
+  eval("use Mojo::UserAgent; 1") or say(<<"ERROR") && exit;
 ERROR:
-    Can't find required module "Mojolicious"!
-    Please install it by command
-        $cmd Mojolicious
+  Can't find required module "Mojolicious"!
+  Please install it by command
+    $cmd Mojolicious
 ERROR
 }
 
@@ -26,8 +26,17 @@ use Mojo::UserAgent;
 my $ua = Mojo::UserAgent->new(name => "find404/$VERSION");
 
 say(<<"HELP") && exit unless @ARGV;
-USAGE:
-  perl ./find404.pl URL
+The find404 util from package "web-utils".
+Use it to find website's pages with bad http status. 
+
+Usage:
+  perl ./find404.pl URL [LOG_LEVEL]
+  
+  URL - simple web URL like "http://example.net/".
+  LOG_LEVEL - what should finder show. Default "warn". Case insencetive.
+  
+Example:
+  perl ./find404.pl http://bugov.net INFO
 HELP
 
 my $url = shift;
