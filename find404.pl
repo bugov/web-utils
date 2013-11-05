@@ -13,17 +13,16 @@ our $VERSION = 0.2;
 
 BEGIN {
     # Check required modules.
+    my $cmd = $^O =~ /win/i ? 'ppm install' : 'cpan';
     eval("use Mojo::UserAgent; 1") or say(<<"ERROR") && exit;
 ERROR:
     Can't find required module "Mojolicious"!
     Please install it by command
-        cpan Mojolicious
+        $cmd Mojolicious
 ERROR
 }
 
 use Mojo::UserAgent;
-
-
 my $ua = Mojo::UserAgent->new(name => "find404/$VERSION");
 
 say(<<"HELP") && exit unless @ARGV;
