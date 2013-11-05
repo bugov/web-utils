@@ -23,7 +23,7 @@ ERROR
 }
 
 use Mojo::UserAgent;
-my $ua = Mojo::UserAgent->new(name => "find404/$VERSION");
+my $ua = Mojo::UserAgent->new(name => "wu-find404/$VERSION");
 
 say(<<"HELP") && exit unless @ARGV;
 The find404 util from package "web-utils".
@@ -81,7 +81,7 @@ while (my $u = pop @links) {
   }
 }
 
-say "[+] Done!";
+say "[!] Done!";
 exit;
 
 # Function: get_page

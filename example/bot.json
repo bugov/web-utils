@@ -1,0 +1,16 @@
+[
+  {
+    "url": "http://bugov.net/",
+    "like": "Bugov's blog"
+  },
+  {
+    "url": "http://bugov.net/login",
+    "method": "POST",
+    "data": {
+      "email": "admin@bugov.net",
+      "password": "secret"
+    },
+    "like": ["Welcome", "Admin"],
+    "unlike": ["Access", "denied"]
+  }
+]
