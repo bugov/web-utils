@@ -1,16 +1,30 @@
 #!/usr/bin/perl
 
+# Copyright (C) 2013, Georgy Bazhukov.
+# 
+# This program is free software, you can redistribute it and/or modify it under
+# the terms of the Artistic License version 2.0.
+
 use utf8;
 use strict;
 use warnings;
 use feature ':5.10';
+our $VERSION = 0.2;
+
+BEGIN {
+    # Check required modules.
+    eval("use Mojo::UserAgent; 1") or say(<<"ERROR") && exit;
+ERROR:
+    Can't find required module "Mojolicious"!
+    Please install it by command
+        cpan Mojolicious
+ERROR
+}
+
 use Mojo::UserAgent;
-use Data::Dumper;
 
-our $VERSION = 0.1;
 
-my $ua = Mojo::UserAgent->new;
-$ua->transactor->name("find404/$VERSION");
+my $ua = Mojo::UserAgent->new(name => "find404/$VERSION");
 
 say(<<"HELP") && exit unless @ARGV;
 USAGE:
