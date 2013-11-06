@@ -47,9 +47,9 @@ See:
 HELP
 
 my $file_path = shift;
-open(my $fh, $file_path) or die "Can't find file $file_path\n";
+open(my $fh, $file_path) or die "[!] Can't find file $file_path\n";
 local $/;
-my $config = j <$fh>;
+my $config = j <$fh> or die qq{[!] $file_path is empty or incorrect JSON\n};
 close $fh;
 
 for my $rule (@$config) {
@@ -71,7 +71,8 @@ exit;
 #       "password": "secret"
 #     },
 #     "like": ["Welcome", "Admin"],
-#     "unlike": ["Access", "denied"]
+#     "unlike": ["Access", "denied"],
+#     "want_code": 200
 #   }
 # Parameters:
 #   $rule - HashRef
@@ -80,13 +81,15 @@ exit;
 sub normalize_rule {
   my $rule = shift;
   
-  $rule->{unlike} = []    unless $rule->{unlike};
-  $rule->{like}   = []    unless $rule->{like};
-  $rule->{data}   = {}    unless $rule->{data};
-  $rule->{method} = 'GET' unless $rule->{method};
+  $rule->{unlike}    = []    unless $rule->{unlike};
+  $rule->{like}      = []    unless $rule->{like};
+  $rule->{data}      = {}    unless $rule->{data};
+  $rule->{method}    = 'GET' unless $rule->{method};
+  $rule->{want_code} = []    unless $rule->{want_code};
   
-  $rule->{unlike} = [$rule->{unlike}] unless ref $rule->{unlike};
-  $rule->{like}   = [$rule->{like}]   unless ref $rule->{like};
+  $rule->{unlike}   = [$rule->{unlike}]   unless ref $rule->{unlike};
+  $rule->{like}     = [$rule->{like}]     unless ref $rule->{like};
+  $rule->{want_code}= [$rule->{want_code}]unless ref $rule->{want_code};
   
   return $rule;
 }
