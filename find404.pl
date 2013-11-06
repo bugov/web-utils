@@ -9,7 +9,7 @@ use utf8;
 use strict;
 use warnings;
 use feature ':5.10';
-our $VERSION = 0.2;
+our $VERSION = 0.3;
 
 BEGIN {
   # Check required modules.
@@ -65,6 +65,7 @@ my %parsed;
 say qq{[!] Start parsing with log level "$log_level".};
 
 while (my $u = pop @links) {
+  log_debug("Looking for page %s", $u);
   my ($code, $title, $content, $a_href_list, $img_src_list,
       $link_href_list, $script_src_list, $undef_list) = get_page($u);
   
@@ -75,9 +76,11 @@ while (my $u = pop @links) {
   }
   
   for my $link (@$a_href_list, @$img_src_list, @$link_href_list, @$script_src_list, @$undef_list) {
+    log_debug("[!] Has link %s", $link);
     next if $parsed{$link};
     $parsed{$link} = 1;
     push @links, $link;
+    log_debug("[!] Add page to pool %s", $link);
   }
 }
 
@@ -256,7 +259,7 @@ sub write_log {
   my ($level, @content) = @_;
   my $format = shift @content;
   
-  printf "[%5s] %s\n", $log_level,
+  printf "[%5s] %s\n", $level,
     ( @content ? sprintf $format, @content : sprintf $format );
 }
 
