@@ -9,24 +9,26 @@ use utf8;
 use strict;
 use warnings;
 use feature ':5.10';
-our $VERSION = 0.3;
+our $VERSION = 0.4;
 
 BEGIN {
   # Check required modules.
   my $cmd = $^O =~ /win/i ? 'ppm install' : 'cpan';
-  eval("use Mojo::UserAgent; 1") or say(<<"ERROR") && exit;
+  eval("use Mojo::UserAgent; 1") && eval("use Log::Log4perl; 1") or say(<<"ERROR") && exit;
 ERROR:
-  Can't find required module "Mojolicious"!
+  Can't find required module "Mojolicious" or "Log::Log4perl"!
   Please install it by command
-    $cmd Mojolicious
+    $cmd Mojolicious Log::Log4perl
 ERROR
 }
 
 use Mojo::UserAgent;
-my $ua = Mojo::UserAgent->new(name => "wu-find404/$VERSION");
+use Log::Log4perl;
+my $ua = Mojo::UserAgent->new;
+$ua->transactor->name("wu-find404/$VERSION");
 
 say(<<"HELP") && exit unless @ARGV;
-The find404 util from package "web-utils".
+The "find404" util from package "web-utils".
 Use it to find website's pages with bad http status. 
 
 Usage:
@@ -34,53 +36,47 @@ Usage:
   
   URL - simple web URL like "http://example.net/".
   LOG_LEVEL - what should finder show. Default "warn". Case insencetive.
+              Valid levels: DEBUG|TRACE|ALL|FATAL|ERROR|WARN|INFO|OFF.
   
 Example:
   perl ./find404.pl http://bugov.net INFO
 HELP
 
 my $url = shift;
-my $log_level = lc (shift || 'WARN');
-my $log_level_list = {
-  debug => 00,
-  info  => 20,
-  warn  => 40,
-  error => 60,
-  fatal => 80,
-  off   => 99,
-};
+$url .= '/' if $url !~ /\/$/;
+my $log_level = uc(shift || 'WARN');
 
-say(<<"ERROR") && exit unless exists $log_level_list->{$log_level};
-ERROR:
-  Can't find log level "$log_level"!
-ERROR
+eval { # try to init logger
+  Log::Log4perl::init(\qq(
+     log4perl.rootLogger              = $log_level, LOG1
+     log4perl.appender.LOG1           = Log::Log4perl::Appender::Screen
+     log4perl.appender.SCREEN.stderr  = 0
+     log4perl.appender.LOG1.mode      = append
+     log4perl.appender.LOG1.layout    = Log::Log4perl::Layout::PatternLayout
+     log4perl.appender.LOG1.layout.ConversionPattern = %d %p %m %n
+  ))
+} or say("Invalid log level '$log_level'! Run ./find404.pl for more information.") && exit;
 
+my $log = Log::Log4perl->get_logger();
 my ($scheme, $domain) = ($url =~ /^(\w+):\/\/([\w\d\-\.:]+)/);
 my $url_chars = '\w\d\.\\\/\+\-_%~#&\?:',
 my $schemes = 'http|https|ftp';
 my @links = ($url);
 my %parsed;
 
-
-say qq{[!] Start parsing with log level "$log_level".};
-
 while (my $u = pop @links) {
-  log_debug("Looking for page %s", $u);
+  $log->debug("Looking for page $u");
   my ($code, $title, $content, $a_href_list, $img_src_list,
       $link_href_list, $script_src_list, $undef_list) = get_page($u);
   
-  if ($code == 200) {
-    log_info('[%d] %s', $code, $u);
-  } else {
-    log_warn('[%d] %s', $code, $u);
-  }
+  $code == 200 ? $log->info("[$code] $u") : $log->warn("[$code] $u");
   
   for my $link (@$a_href_list, @$img_src_list, @$link_href_list, @$script_src_list, @$undef_list) {
-    log_debug("[!] Has link %s", $link);
+    $log->debug("Has link $link");
     next if $parsed{$link};
     $parsed{$link} = 1;
     push @links, $link;
-    log_debug("[!] Add page to pool %s", $link);
+    $log->debug("Add page to pool $link");
   }
 }
 
@@ -106,13 +102,13 @@ sub get_page {
   my $code = $res->{code};
   
   if (exists $res->{error} && @{$res->{error}}) {
-    log_error("%s:\n\t%s", $url, join "\n\t", @{$res->{error}});
+    $log->error("$url:\n\t" . join("\n\t", @{$res->{error}}));
     return $code, '', '', [], [], [] ,[], [];
   }
   
   # Skip by content-type
   if ($res->content->{headers}->{headers}->{'content-type'}[0][0] !~ /(?:text|html)/) {
-    log_info('%s looks like non-text/html document', $url);
+    $log->info("$url looks like non-text/html document");
     return $code, '', '', [], [], [], [], [];
   }
   
@@ -209,7 +205,6 @@ sub get_link {
   my ($href) = @_;
   $href = [split /#/, $href]->[0];
   return unless defined $href;
-  
   my $abs_url_re = qr/(?:$schemes):\/\/[$url_chars]*/;
   
   if ($href =~ /^$abs_url_re/) {}
@@ -242,74 +237,9 @@ sub get_link {
     pop @parts;
     push @parts, $href;
     $href = join '/', @parts;
+    $href = $scheme."://".$domain.$href if $href !~ /^$abs_url_re/;
   }
   
   return if $href !~ /$domain/;
   return $href;
 }
-
-### Log
-
-# Function: write_log
-#   Write messages into log
-# Parameters:
-#   $level - log level name
-#   @content - Array - log info (sprintf)
-sub write_log {
-  my ($level, @content) = @_;
-  my $format = shift @content;
-  
-  printf "[%5s] %s\n", $level,
-    ( @content ? sprintf $format, @content : sprintf $format );
-}
-
-# Function: log_debug
-#   Log debug message
-# Parameters:
-#   @content - Array - message for write_log
-sub log_debug {
-  my @content = @_;
-  return if $log_level_list->{debug} < $log_level_list->{$log_level};
-  write_log('debug', @content);
-}
-
-# Function: log_info
-#   Log info message
-# Parameters:
-#   @content - Array - message for write_log
-sub log_info {
-  my @content = @_;
-  return if $log_level_list->{info} < $log_level_list->{$log_level};
-  write_log('info', @content);
-}
-
-# Function: log_warn
-#   Log warning message
-# Parameters:
-#   @content - Array - message for write_log
-sub log_warn {
-  my @content = @_;
-  return if $log_level_list->{warn} < $log_level_list->{$log_level};
-  write_log('warn', @content);
-}
-
-# Function: log_error
-#   Log error message
-# Parameters:
-#   @content - Array - message for write_log
-sub log_error {
-  my @content = @_;
-  return if $log_level_list->{error} < $log_level_list->{$log_level};
-  write_log('error', @content);
-}
-
-# Function: log_fatal
-#   Log fatal message
-# Parameters:
-#   @content - Array - message for write_log
-sub log_fatal {
-  my @content = @_;
-  return if $log_level_list->{fatal} < $log_level_list->{$log_level};
-  write_log('fatal', @content);
-}
-
