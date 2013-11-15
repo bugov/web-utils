@@ -31,7 +31,7 @@ use Mojo::JSON 'j';
 my $ua = Mojo::UserAgent->new(name => "wu-bot/$VERSION");
 
 say(<<"HELP") && exit if @ARGV != 1;
-The bot util from package "web-utils".
+The "bot" util from package "web-utils".
 Use it to check website's behavior. 
 
 Usage:
