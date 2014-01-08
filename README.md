@@ -36,11 +36,14 @@ base on server response (or local time if can't use server header).
   Usage:
     perl ./sitemap-xml.pl URL [FILE]
     
-    URL - simple web URL like "http://example.net/".
-    FILE - path to file where it should be. Default 'sitemap.xml'.
+    URL  - simple web URL like "http://example.net/".
+    FILE - path to file where it should be.
+           Default 'sitemap.xml'. Set "STDOUT" to get result on STDOUT (console).
     
   Example:
     perl ./sitemap-xml.pl http://bugov.net ./sitemap.xml
+  or
+    perl ./sitemap-xml.pl http://bugov.net stdout > ./sitemap.xml
 ```
 
 ### SEE

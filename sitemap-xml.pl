@@ -38,11 +38,12 @@ my $abs_url_re = qr/(?:$schemes):\/\/[$url_chars]*/;
 my %mon_str_to_num = qw(Jan 01 Feb 02 Mar 03 Apr 04 May 05 Jun 06 Jul 07 Aug 08 Sep 09 Oct 10 Nov 11 Dec 12);
 
 # MainLoop
-open(my $fh, ">$fn") or croak("Can't write to file $fn");
+my $fh = *STDOUT;
+open($fh, ">$fn") or croak("Can't write to file $fn") if lc($fn) ne 'stdout';
 say $fh '<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 while (my $url = shift @pool) {
-  say "Looking for $url";
+  say STDERR "Looking for $url";
   my $res = $ua->get("$url")->res;
   
   # Skip by content-type, http code
@@ -126,11 +127,14 @@ Use it to generate xml sitemap for your website.
 Usage:
   perl ./sitemap-xml.pl URL [FILE]
   
-  URL - simple web URL like "http://example.net/".
-  FILE - path to file where it should be. Default 'sitemap.xml'.
+  URL  - simple web URL like "http://example.net/".
+  FILE - path to file where it should be.
+         Default 'sitemap.xml'. Set "STDOUT" to get result on STDOUT (console).
   
 Example:
   perl ./sitemap-xml.pl http://bugov.net ./sitemap.xml
+or
+  perl ./sitemap-xml.pl http://bugov.net stdout > ./sitemap.xml
 
 __END__
 
@@ -146,11 +150,14 @@ base on server response (or local time if can't use server header).
   Usage:
     perl ./sitemap-xml.pl URL [FILE]
     
-    URL - simple web URL like "http://example.net/".
-    FILE - path to file where it should be. Default 'sitemap.xml'.
+    URL  - simple web URL like "http://example.net/".
+    FILE - path to file where it should be.
+           Default 'sitemap.xml'. Set "STDOUT" to get result on STDOUT (console).
     
   Example:
     perl ./sitemap-xml.pl http://bugov.net ./sitemap.xml
+  or
+    perl ./sitemap-xml.pl http://bugov.net stdout > ./sitemap.xml
 
 =head1 SEE
 
