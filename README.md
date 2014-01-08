@@ -46,7 +46,7 @@ base on server response (or local time if can't use server header).
     perl ./sitemap-xml.pl http://bugov.net stdout > ./sitemap.xml
 ```
 
-### SEE
+### See
 
 * [Sitemap format defenition](http://www.sitemaps.org/ru/protocol.html)
 * [GitHub project](https://github.com/bugov/web-utils)

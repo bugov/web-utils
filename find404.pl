@@ -1,70 +1,41 @@
-#!/usr/bin/perl
-
-# Copyright (C) 2013, Georgy Bazhukov.
-# 
-# This program is free software, you can redistribute it and/or modify it under
-# the terms of the Artistic License version 2.0.
+#!/usr/bin/perl -w
 
 use utf8;
 use strict;
 use warnings;
 use feature ':5.10';
-our $VERSION = 0.4;
 
 BEGIN {
   # Check required modules.
   my $cmd = $^O =~ /win/i ? 'ppm install' : 'cpan';
-  eval("use Mojo::UserAgent; 1") && eval("use Log::Log4perl; 1") or say(<<"ERROR") && exit;
+  eval("use Mojo::UserAgent; 1") or say(<<"ERROR") && exit;
 ERROR:
-  Can't find required module "Mojolicious" or "Log::Log4perl"!
+  Can't find required module "Mojolicious"!
   Please install it by command
-    $cmd Mojolicious Log::Log4perl
+    $cmd Mojolicious
 ERROR
 }
 
+use Mojo::Log;
 use Mojo::UserAgent;
-use Log::Log4perl;
+our $VERSION = 0.5;
+say(<DATA>) && exit unless @ARGV;
+
 my $ua = Mojo::UserAgent->new;
-$ua->transactor->name("wu-find404/$VERSION");
-
-say(<<"HELP") && exit unless @ARGV;
-The "find404" util from package "web-utils".
-Use it to find website's pages with bad http status. 
-
-Usage:
-  perl ./find404.pl URL [LOG_LEVEL]
-  
-  URL - simple web URL like "http://example.net/".
-  LOG_LEVEL - what should finder show. Default "warn". Case insencetive.
-              Valid levels: DEBUG|TRACE|ALL|FATAL|ERROR|WARN|INFO|OFF.
-  
-Example:
-  perl ./find404.pl http://bugov.net INFO
-HELP
+   $ua->transactor->name("wu-find404/$VERSION");
 
 my $url = shift;
-$url .= '/' if $url !~ /\/$/;
-my $log_level = uc(shift || 'WARN');
+   $url .= '/' if $url !~ /\/$/;
+my $log = Mojo::Log->new;
+   $log->level(lc(shift || 'WARN'));
 
-eval { # try to init logger
-  Log::Log4perl::init(\qq(
-     log4perl.rootLogger              = $log_level, LOG1
-     log4perl.appender.LOG1           = Log::Log4perl::Appender::Screen
-     log4perl.appender.SCREEN.stderr  = 0
-     log4perl.appender.LOG1.mode      = append
-     log4perl.appender.LOG1.layout    = Log::Log4perl::Layout::PatternLayout
-     log4perl.appender.LOG1.layout.ConversionPattern = %d %p %m %n
-  ))
-} or say("Invalid log level '$log_level'! Run ./find404.pl for more information.") && exit;
-
-my $log = Log::Log4perl->get_logger();
 my ($scheme, $domain) = ($url =~ /^(\w+):\/\/([\w\d\-\.:]+)/);
 my $url_chars = '\w\d\.\\\/\+\-_%~#&\?:',
 my $schemes = 'http|https|ftp';
-my @links = ($url);
-my %parsed;
+my @pool = ($url);
+my %visited;
 
-while (my $u = pop @links) {
+while (my $u = pop @pool) {
   $log->debug("Looking for page $u");
   my ($code, $title, $content, $a_href_list, $img_src_list,
       $link_href_list, $script_src_list, $undef_list) = get_page($u);
@@ -73,9 +44,9 @@ while (my $u = pop @links) {
   
   for my $link (@$a_href_list, @$img_src_list, @$link_href_list, @$script_src_list, @$undef_list) {
     $log->debug("Has link $link");
-    next if $parsed{$link};
-    $parsed{$link} = 1;
-    push @links, $link;
+    next if $visited{$link};
+    $visited{$link} = 1;
+    push @pool, $link;
     $log->debug("Add page to pool $link");
   }
 }
@@ -99,10 +70,10 @@ exit;
 sub get_page {
   my $url = shift;
   my $res = $ua->get($url)->res;
-  my $code = $res->{code};
+  my $code = $res->{code} || 418;
   
   if (exists $res->{error} && @{$res->{error}}) {
-    $log->error("$url:\n\t" . join("\n\t", @{$res->{error}}));
+    $log->info("$url:\n\t" . join("\n\t", @{$res->{error}}));
     return $code, '', '', [], [], [] ,[], [];
   }
   
@@ -243,3 +214,62 @@ sub get_link {
   return if $href !~ /$domain/;
   return $href;
 }
+
+__DATA__
+
+The "find404" util from package "web-utils".
+Use it to find website's pages with bad http status. 
+
+Usage:
+  perl ./find404.pl URL [LOG_LEVEL]
+  
+  URL - simple web URL like "http://example.net/".
+  LOG_LEVEL - what should finder show. Default "warn". Case insencetive.
+              Valid levels: FATAL|ERROR|WARN|INFO|DEBUG.
+  
+Example:
+  perl ./find404.pl http://bugov.net INFO
+
+__END__
+
+=head1 NAME
+
+find404 - a website's page checker.
+
+=head1 OVERVIEW
+
+Use it to find website's pages with bad http status.
+
+  Usage:
+    perl ./find404.pl URL [LOG_LEVEL]
+    
+    URL - simple web URL like "http://example.net/".
+    LOG_LEVEL - what should finder show. Default "warn". Case insencetive.
+                Valid levels: FATAL|ERROR|WARN|INFO|DEBUG.
+    
+  Example:
+    perl ./find404.pl http://bugov.net INFO
+
+=head1 SEE
+
+=over
+
+=item Status Code Definitions
+
+L<http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html>
+
+=item GitHub project
+
+L<https://github.com/bugov/web-utils>
+
+=back
+
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2013 - 2014, Georgy Bazhukov <bugov@cpan.org>.
+ 
+This program is free software, you can redistribute it and/or modify it under
+the terms of the Artistic License version 2.0.
+
+=cut
