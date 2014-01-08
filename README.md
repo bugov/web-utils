@@ -22,6 +22,32 @@ perl ./find404.pl URL [LOG_LEVEL]
 perl ./find404.pl http://bugov.net INFO
 ```
 
+## sitemap-xml.pl
+
+The sitemap-xml util from package "web-utils".
+sitemap-xml - a sitemap generator.
+
+### Overview
+
+`sitemap-xml` helps you generate xml sitemap for your website. It defines C<last-modified> date
+base on server response (or local time if can't use server header).
+
+```
+  Usage:
+    perl ./sitemap-xml.pl URL [FILE]
+    
+    URL - simple web URL like "http://example.net/".
+    FILE - path to file where it should be. Default 'sitemap.xml'.
+    
+  Example:
+    perl ./sitemap-xml.pl http://bugov.net ./sitemap.xml
+```
+
+### SEE
+
+* [Sitemap format defenition](http://www.sitemaps.org/ru/protocol.html)
+* [GitHub project](https://github.com/bugov/web-utils)
+
 ## spellcheck.pl
 
 The "spellcheck" util from package "web-utils".
